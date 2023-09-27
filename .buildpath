@@ -3,4 +3,6 @@
 	<buildpathentry kind="src" path=""/>
 	<buildpathentry kind="con" path="org.eclipse.php.core.LANGUAGE"/>
 	<buildpathentry external="true" kind="lib" path="C:/wamp/www/exface/exface/vendor/exface/core"/>
+	<buildpathentry external="true" kind="lib" path="C:/wamp/www/exface/exface/vendor/league"/>
+	<buildpathentry external="true" kind="lib" path="C:/wamp/www/exface/exface/vendor/microsoft"/>
 </buildpath>
