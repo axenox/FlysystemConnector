@@ -10,7 +10,7 @@ use exface\Core\DataTypes\StringDataType;
  *
  * @author Andrej Kabachnik
  */
-class FlysystemFile implements FileInterface
+class Flysystem1File implements FileInterface
 {
     private $fileInfo = null;
     
@@ -23,7 +23,7 @@ class FlysystemFile implements FileInterface
      * @param LocalFileInfo $fileInfo
      * @param string $mode
      */
-    public function __construct(FlysystemFileInfo $fileInfo)
+    public function __construct(Flysystem1FileInfo $fileInfo)
     {
         $this->fileInfo = $fileInfo;
         $this->filesystem = $fileInfo->getFilesystem();

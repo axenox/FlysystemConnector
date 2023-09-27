@@ -126,7 +126,18 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
     protected function createGenerator(Filesystem $filesystem, array $paths, array $namePatterns = [], string $basePath = null) : \Generator
     {
         foreach ($paths as $path) {
-            yield from $filesystem->listContents($path)->getIterator();
+            $listing = $filesystem->listContents($path);
+            if (is_array($listing)) {
+                // Flysystem 1
+                foreach ($listing as $arr) {
+                    yield new Flysystem1FileInfo($filesystem, $arr, $basePath);
+                }
+            } else {
+                // Flysystem 3
+                foreach ($listing->getIterator() as $storageAttrs) {
+                    yield new Flysystem1FileInfo($filesystem, $storageAttrs, $basePath);
+                }
+            }
         }
     }
     

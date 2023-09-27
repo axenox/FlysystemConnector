@@ -13,13 +13,15 @@ use League\Flysystem\Filesystem;
  *
  * @author Andrej Kabachnik
  */
-class FlysystemFileInfo implements FileInfoInterface
+class Flysystem1FileInfo implements FileInfoInterface
 {
     private $path = null;
     
     private $basePath = null;
     
     private $pathAbs = null;
+    
+    private $attrs = null;
     
     private $filesystem = null;
     
@@ -30,12 +32,13 @@ class FlysystemFileInfo implements FileInfoInterface
      * @param string $basePath
      * @param string $directorySeparator
      */
-    public function __construct(Filesystem $filesystem, string $path, string $basePath = null)
+    public function __construct(Filesystem $filesystem, array $attributes, string $basePath = null)
     {
+        $path = $attributes['path'];
         $this->filesystem = $filesystem;
         $this->path = $path;
         $this->basePath = $basePath;
-        
+        $this->attrs = $attributes;
         if ($basePath !== null && ! FilePathDataType::isAbsolute($path)) {
             $this->pathAbs = FilePathDataType::join([$basePath, $path]);
         } else {
@@ -136,7 +139,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function getSize() : ?int
     {
-        return $this->filesystem->fileSize($this->getPathAbsolute());
+        return $this->attrs['size'];
     }
     
     /**
@@ -146,7 +149,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function getMTime() : ?int
     {
-        return $this->filesystem->lastModified($this->getPathAbsolute());
+        return $this->attrs['timestamp'];
         
     }
     
@@ -167,7 +170,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function isWritable() : bool
     {
-        return $this->filesystem->fileExists($this->getPathAbsolute());
+        return $this->filesystem->has($this->getPathAbsolute());
     }
     
     /**
@@ -177,7 +180,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function isReadable() : bool
     {
-        return $this->filesystem->fileExists($this->getPathAbsolute());
+        return $this->filesystem->has($this->getPathAbsolute());
     }
     
     /**
@@ -187,7 +190,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function isFile() : bool
     {
-        return $this->filesystem->fileExists($this->getPathAbsolute());
+        return $this->filesystem->has($this->getPathAbsolute());
     }
     
     /**
@@ -197,7 +200,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function isDir() : bool
     {
-        return $this->filesystem->directoryExists($this->getPathAbsolute());
+        return $this->filesystem->has($this->getPathAbsolute());
     }
     
     /**
@@ -227,7 +230,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function openFile(string $mode = null) : FileInterface
     {
-        return new FlysystemFile($this);
+        return new Flysystem1File($this);
     }
     
     /**
@@ -247,7 +250,10 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function getModifiedOn(): ?DateTimeInterface
     {
-        return new \DateTimeImmutable('@' . $this->filesystem->lastModified($this->getPathAbsolute()));
+        if (! $this->attrs['timestamp']) {
+            return null;
+        }
+        return new \DateTimeImmutable('@' . $this->attrs['timestamp']);
     }
     
     /**
@@ -271,7 +277,8 @@ class FlysystemFileInfo implements FileInfoInterface
         if ($folderPath === null || $folderPath === '') {
             return null;
         }
-        return new FlysystemFileInfo($this->filesystem, $folderPath, $this->getBasePath());
+        $folderArr = $this->filesystem->getMetadata($this->attrs['dirname']);
+        return new Flysystem1FileInfo($this->filesystem, $folderArr, $this->getBasePath());
     }
     
     /**
@@ -291,7 +298,7 @@ class FlysystemFileInfo implements FileInfoInterface
      */
     public function getMimetype(): ?string
     {
-        return $this->filesystem->mimeType($this->getPathAbsolute());
+        return $this->filesystem->getMimetype($this->getPath());
     }
     
     /**
