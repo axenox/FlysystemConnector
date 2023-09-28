@@ -5,7 +5,6 @@ use exface\Core\DataTypes\FilePathDataType;
 use \DateTimeInterface;
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\Filesystem\FileInterface;
-use exface\Core\DataTypes\MimeTypeDataType;
 use League\Flysystem\Filesystem;
 
 /**

@@ -135,7 +135,7 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
             } else {
                 // Flysystem 3
                 foreach ($listing->getIterator() as $storageAttrs) {
-                    yield new Flysystem1FileInfo($filesystem, $storageAttrs, $basePath);
+                    yield new Flysystem1FileInfo($filesystem, $storageAttrs->getPath(), $basePath);
                 }
             }
         }

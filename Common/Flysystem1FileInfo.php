@@ -58,7 +58,7 @@ class Flysystem1FileInfo implements FileInfoInterface
     
     public function getFolderPath() : ?string
     {
-        return FilePathDataType::findFolderPath($this->getPath());
+        return $this->attrs['dirname'] ?? FilePathDataType::findFolderPath($this->getPath());
     }
     
     /**
@@ -68,6 +68,9 @@ class Flysystem1FileInfo implements FileInfoInterface
      */
     public function getFilename(bool $withExtension = true) : string
     {
+        if (array_key_exists('basename', $this->attrs)) {
+            return $withExtension ? $this->attrs['basename'] : $this->attrs['filename'];
+        }
         return FilePathDataType::findFileName($this->getPath(), $withExtension);
     }
     
@@ -78,7 +81,7 @@ class Flysystem1FileInfo implements FileInfoInterface
      */
     public function getExtension() : string
     {
-        return FilePathDataType::findExtension($this->getPath());
+        return $this->attrs['extension'] ?? FilePathDataType::findExtension($this->getPath());
     }
     
     /**
@@ -170,7 +173,7 @@ class Flysystem1FileInfo implements FileInfoInterface
      */
     public function isWritable() : bool
     {
-        return $this->filesystem->has($this->getPathAbsolute());
+        return $this->filesystem->has($this->getPath());
     }
     
     /**
@@ -180,7 +183,7 @@ class Flysystem1FileInfo implements FileInfoInterface
      */
     public function isReadable() : bool
     {
-        return $this->filesystem->has($this->getPathAbsolute());
+        return $this->filesystem->has($this->getPath());
     }
     
     /**
@@ -190,7 +193,7 @@ class Flysystem1FileInfo implements FileInfoInterface
      */
     public function isFile() : bool
     {
-        return $this->filesystem->has($this->getPathAbsolute());
+        return $this->attrs['type'] === 'file';
     }
     
     /**
@@ -200,7 +203,7 @@ class Flysystem1FileInfo implements FileInfoInterface
      */
     public function isDir() : bool
     {
-        return $this->filesystem->has($this->getPathAbsolute());
+        return $this->attrs['type'] === 'dir';
     }
     
     /**

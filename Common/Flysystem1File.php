@@ -45,7 +45,7 @@ class Flysystem1File implements FileInterface
      */
     public function read() : string
     {
-        return $this->filesystem->read($this->fileInfo->getPathAbsolute());
+        return $this->filesystem->read($this->fileInfo->getPath());
     }
     
     /**
@@ -55,7 +55,7 @@ class Flysystem1File implements FileInterface
      */
     public function readStream()
     {
-        return $this->filesystem->readStream($this->fileInfo->getPathAbsolute());
+        return $this->filesystem->readStream($this->fileInfo->getPath());
     }
     
     /**
@@ -65,7 +65,7 @@ class Flysystem1File implements FileInterface
      */
     public function writeStream($resource): FileInterface
     {
-        $this->filesystem->writeStream($this->fileInfo->getPathAbsolute(), $resource);
+        $this->filesystem->writeStream($this->fileInfo->getPath(), $resource);
         return $this;
     }
     
@@ -76,7 +76,7 @@ class Flysystem1File implements FileInterface
      */
     public function write($stringOrBinary): FileInterface
     {
-        $this->filesystem->write($this->fileInfo->getPathAbsolute(), $stringOrBinary);
+        $this->filesystem->write($this->fileInfo->getPath(), $stringOrBinary);
         return $this;
     }
     
