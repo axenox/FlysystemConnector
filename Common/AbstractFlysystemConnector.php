@@ -11,6 +11,8 @@ use exface\Core\DataTypes\FilePathDataType;
 use exface\Core\Interfaces\DataSources\DataQueryInterface;
 use League\Flysystem\Filesystem;
 use exface\Core\Exceptions\DataSources\DataConnectionQueryTypeError;
+use exface\Core\DataTypes\StringDataType;
+use exface\Core\Exceptions\DataSources\DataQueryFailedError;
 
 /**
  * Reads and writes files via Flysystem
@@ -47,8 +49,21 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         }
         
         // If the query does not have a base path, use the base path of the connection
-        if (! $query->getBasePath() && null !== $basePath = $this->getBasePath()) {
-            $query->setBasePath($basePath);
+        $connectionBase = $this->getBasePath();
+        if ($connectionBase !== null) {
+            $queryBase = $query->getBasePath();
+            switch (true) {
+                case ! $queryBase:
+                    $query->setBasePath($connectionBase);
+                    break;
+                case FilePathDataType::isAbsolute($queryBase) && FilePathDataType::isAbsolute($connectionBase):
+                    if (StringDataType::startsWith($connectionBase, $queryBase)) {
+                        $query->setBasePath($connectionBase);
+                    } elseif (! StringDataType::startsWith($queryBase, $connectionBase)) {
+                        throw new DataQueryFailedError($query, 'Cannot combine base paths of file query ("' . $queryBase .  '") and connection ("' . $connectionBase . '")');
+                    }
+                    break;
+            }
         }
         
         if ($query instanceof FileWriteDataQuery) {
@@ -66,21 +81,15 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
      */
     protected function performRead(FileReadDataQuery $query) : FileReadDataQuery
     {
-        $paths = [];
-        
-        // Prepare an array of absolute paths to search in
         // Note: $query->getBasePath() already includes the base path of this connection
         // - see `performQuery()`
         $basePath = $query->getBasePath() ?? '';
-        foreach ($query->getFolders() as $path) {
-            $paths[] = $this->addBasePath($path, $basePath);
-        }
         
+        $paths = $query->getFolders(true);
         // If no paths could be found anywhere (= the query object did not have any folders defined), use the base path
         if (empty($paths)) {
             $paths[] = $basePath;
         }
-        
         // If there are no paths at this point, we don't have any existing folder to look in,
         // so add an empty result to the finder and return it. We must call in() or append()
         // to be able to iterate over the finder!
@@ -88,29 +97,11 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
             return $query->withResult([]);
         }
         
-        // Make sure not to have double paths as Symfony FileFinder will yield results for each path separately
-        $paths = array_unique($paths);
-        
-        $filesystem = $this->getFilesystem();
-        
-        // Also try to filter out paths that match paterns in other paths
-        $pathsFiltered = $paths;
-        foreach ($paths as $path) {
-            $path = FilePathDataType::normalize($path, $query->getDirectorySeparator());
-            if (strpos($path, '*') !== false) {
-                foreach ($paths as $i => $otherPath) {
-                    $otherPath = FilePathDataType::normalize($otherPath, $query->getDirectorySeparator());
-                    if ($otherPath !== $path && fnmatch($path, $otherPath)) {
-                        unset($pathsFiltered[$i]);
-                    }
-                }
-            }
-        }
-        
-        $namePatterns = $query->getFilenamePatterns();
+        $namePatterns = $query->getFilenamePatterns() ?? [];
         
         try {
-            return $query->withResult($this->createGenerator($filesystem, $pathsFiltered, $namePatterns, $basePath));
+            $filesystem = $this->getFilesystem();
+            return $query->withResult($this->createGenerator($filesystem, $paths, $namePatterns, $basePath));
         } catch (\Exception $e) {
             throw new DataQueryFailedError($query, "Failed to read local files", null, $e);
         }
@@ -203,25 +194,6 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         }
         
         return $query->withResult($resultFiles);
-    }
-    
-    /**
-     *
-     * @param string $pathRelativeOrAbsolute
-     * @return string
-     */
-    protected function addBasePath(string $pathRelativeOrAbsolute, string $basePath) : string
-    {
-        if (! FilePathDataType::isAbsolute($pathRelativeOrAbsolute)) {
-            $path = FilePathDataType::join([
-                $basePath,
-                $pathRelativeOrAbsolute
-            ]);
-        } else {
-            $path = $pathRelativeOrAbsolute;
-        }
-        
-        return FilePathDataType::normalize($path, '/');
     }
     
     /**

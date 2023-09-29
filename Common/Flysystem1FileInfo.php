@@ -312,4 +312,14 @@ class Flysystem1FileInfo implements FileInfoInterface
     {
         return $this->filesystem;
     }
+    
+    /**
+     *
+     * {@inheritDoc}
+     * @see \exface\Core\Interfaces\Filesystem\FileInfoInterface::getType()
+     */
+    public function getType(): string
+    {
+        return $this->attrs['type'];
+    }
 }
