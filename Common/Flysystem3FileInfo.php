@@ -6,13 +6,14 @@ use \DateTimeInterface;
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\Filesystem\FileInterface;
 use League\Flysystem\Filesystem;
+use axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface;
 
 /**
  * Contains information about a single local file - similar to PHPs splFileInfo.
  *
  * @author Andrej Kabachnik
  */
-class Flysystem3FileInfo implements FileInfoInterface
+class Flysystem3FileInfo implements FlysystemFileInfoInterface
 {
     private $path = null;
     
@@ -319,5 +320,15 @@ class Flysystem3FileInfo implements FileInfoInterface
     public function isVirtual() : bool
     {
         return false;
+    }
+    
+    /**
+     *
+     * {@inheritDoc}
+     * @see \exface\Core\Interfaces\Filesystem\FileInfoInterface::exists()
+     */
+    public function exists(): bool
+    {
+        return $this->filesystem->has($this->getPath());
     }
 }

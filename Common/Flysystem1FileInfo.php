@@ -7,13 +7,14 @@ use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\Filesystem\FileInterface;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FileNotFoundException;
+use axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface;
 
 /**
  * Contains information about a single file or folder in Flysystem.
  *
  * @author Andrej Kabachnik
  */
-class Flysystem1FileInfo implements FileInfoInterface
+class Flysystem1FileInfo implements FlysystemFileInfoInterface
 {
     private $path = null;
     
@@ -336,8 +337,23 @@ class Flysystem1FileInfo implements FileInfoInterface
         return $this->attrs['type'];
     }
     
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface::isVirtual()
+     */
     public function isVirtual() : bool
     {
         return false;
+    }
+    
+    /**
+     *
+     * {@inheritDoc}
+     * @see \exface\Core\Interfaces\Filesystem\FileInfoInterface::exists()
+     */
+    public function exists(): bool
+    {
+        return $this->filesystem->has($this->getPath());
     }
 }
