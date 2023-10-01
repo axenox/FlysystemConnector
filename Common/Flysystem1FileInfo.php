@@ -5,11 +5,11 @@ use exface\Core\DataTypes\FilePathDataType;
 use \DateTimeInterface;
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\Filesystem\FileInterface;
-use exface\Core\DataTypes\MimeTypeDataType;
 use League\Flysystem\Filesystem;
+use League\Flysystem\FileNotFoundException;
 
 /**
- * Contains information about a single local file - similar to PHPs splFileInfo.
+ * Contains information about a single file or folder in Flysystem.
  *
  * @author Andrej Kabachnik
  */
@@ -280,7 +280,20 @@ class Flysystem1FileInfo implements FileInfoInterface
         if ($folderPath === null || $folderPath === '') {
             return null;
         }
-        $folderArr = $this->filesystem->getMetadata($this->attrs['dirname']);
+        try {
+            $folderArr = $this->filesystem->getMetadata($this->attrs['dirname']);
+        } catch (FileNotFoundException $e) {
+            // Flysystem also supports storages, that do not have folders as such - like Azure BLOB storage.
+            // In these cases Flysystem emulates folders by creating file names with paths in them, which
+            // is a common technique. These "virtual folders" cannot be read explicitly though, so they
+            // don't have metadata. On the other hand, their contents can be read perfectly.
+            // Here we assume, that any folder in an existing path, that does not exist itself, is a virtual
+            // folder.
+            if ($this->getFilesystem()->has($this->getPath())) {
+                return new Flysystem1VirtualFolderInfo($this->filesystem, $this->attrs['dirname'], $this->getBasePath());
+            }
+            throw $e;
+        }
         return new Flysystem1FileInfo($this->filesystem, $folderArr, $this->getBasePath());
     }
     
@@ -321,5 +334,10 @@ class Flysystem1FileInfo implements FileInfoInterface
     public function getType(): string
     {
         return $this->attrs['type'];
+    }
+    
+    public function isVirtual() : bool
+    {
+        return false;
     }
 }

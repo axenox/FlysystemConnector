@@ -13,6 +13,7 @@ use League\Flysystem\Filesystem;
 use exface\Core\Exceptions\DataSources\DataConnectionQueryTypeError;
 use exface\Core\DataTypes\StringDataType;
 use exface\Core\Exceptions\DataSources\DataQueryFailedError;
+use exface\Core\DataTypes\RegularExpressionDataType;
 
 /**
  * Reads and writes files via Flysystem
@@ -116,11 +117,26 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
      */
     protected function createGenerator(Filesystem $filesystem, array $paths, array $namePatterns = [], string $basePath = null) : \Generator
     {
+        $filterRegExps = [];
+        $filterNames = [];
+        foreach ($namePatterns as $p) {
+            if (RegularExpressionDataType::isRegex($p)) {
+                $filterRegExps[] = $p;
+            } else {
+                $filterNames[] = $p;
+            }
+        }
         foreach ($paths as $path) {
             $listing = $filesystem->listContents($path);
-            if (is_array($listing)) {
+            if ($this->getFlysystemVersion() === 1) {
                 // Flysystem 1
                 foreach ($listing as $arr) {
+                    if (! $this->matchRegExps($arr['basename'], $filterRegExps)) {
+                        continue;
+                    }
+                    if (! $this->matchPatterns($arr['basename'], $filterNames)) {
+                        continue;
+                    }
                     yield new Flysystem1FileInfo($filesystem, $arr, $basePath);
                 }
             } else {
@@ -133,6 +149,44 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
     }
     
     /**
+     * 
+     * @param string $path
+     * @param string[] $patterns
+     * @return bool
+     */
+    protected function matchRegExps(string $path, array $patterns) : bool
+    {
+        if (empty($patterns)) {
+            return true;
+        }
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $path) === 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * 
+     * @param string $path
+     * @param string[] $patterns
+     * @return bool
+     */
+    protected function matchPatterns(string $path, array $patterns) : bool
+    {
+        if (empty($patterns)) {
+            return true;
+        }
+        foreach ($patterns as $pattern) {
+            if (FilePathDataType::matchesPattern($path, $pattern) === true) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
      *
      * @param FileWriteDataQuery $query
      * @throws DataQueryFailedError
@@ -140,23 +194,30 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
      */
     protected function performWrite(FileWriteDataQuery $query) : FileWriteDataQuery
     {
+        $fs = $this->getFilesystem();
+        
         // Note: the base path of the query already includes the base path of this connection
         // - see `performQuery()`
         $basePath = $query->getBasePath();
         
         $resultFiles = [];
-        $fm = $this->getWorkbench()->filemanager();
-        foreach ($query->getFilesToSave() as $path => $content) {
+        foreach ($query->getFilesToSave(true) as $path => $content) {
             if ($path === null) {
                 throw new DataQueryFailedError($query, 'Cannot write file with an empty path!');
             }
-            $path = $this->addBasePath($path, $basePath, $query->getDirectorySeparator());
-            $fm->dumpFile($path, $content ?? '');
-            $resultFiles[] = new LocalFileInfo($path);
+            
+            if ($this->getFlysystemVersion() === 1) {
+                $fs->put($path, $content ?? '');
+                $fileInfo = new Flysystem1FileInfo($fs, $fs->getMetadata($path), $basePath);
+            } else {
+                $fs->write($path, $content ?? '');
+                $fileInfo = new Flysystem3FileInfo($fs, $path, $basePath);
+            }
+            $resultFiles[] = $fileInfo;
         }
         
         $deleteEmptyFolders = $query->getDeleteEmptyFolders();
-        foreach ($query->getFilesToDelete() as $pathOrInfo) {
+        foreach ($query->getFilesToDelete(true) as $pathOrInfo) {
             if ($pathOrInfo instanceof FileInfoInterface) {
                 $path = $pathOrInfo->getPath();
                 $fileInfo = $pathOrInfo;
@@ -165,30 +226,26 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
                 $fileInfo = null;
             }
             
-            if ($basePath !== null) {
-                $path = $this->addBasePath($path, $basePath, $query->getDirectorySeparator());
-            }
-            
-            if (! file_exists($path)) {
-                continue;
-            }
-            
             // Do delete now
-            if (is_dir($path)) {
-                $fm->deleteDir($path);
-            } else {
-                $check = unlink($path);
-                if ($check === false) {
-                    throw new DataQueryFailedError($query, 'Cannot delete file "' . $pathOrInfo . '"!');
-                }
+            $fs->delete($path);
+            
+            switch (true) {
+                case $fileInfo !== null:
+                    break;
+                case $this->getFlysystemVersion() === 1:
+                    $fileInfo = new Flysystem1FileInfo($fs, $fs->getMetadata($path), $basePath);
+                    break;
+                default:
+                    $fileInfo = new Flysystem3FileInfo($fs, $path, $basePath);
+                    break;
             }
             
-            $resultFiles[] = $fileInfo ?? new LocalFileInfo($path, $basePath, $query->getDirectorySeparator());
+            $resultFiles[] = $fileInfo;
             
             if ($deleteEmptyFolders === true) {
-                $folder = FilePathDataType::findFolderPath($path);
-                if ($folder !== '' && $fm::isDirEmpty($folder)) {
-                    $fm::deleteDir($folder);
+                $folder = $fileInfo->getFolderInfo();
+                if ($folder !== null && ! $folder->isVirtual() && empty($fs->listContents($folder))) {
+                    $fs->delete($folder);
                 }
             }
         }
@@ -227,4 +284,17 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
     }
     
     protected abstract function getFilesystem() : Filesystem;
+    
+    /**
+     * 
+     * @return int
+     */
+    protected function getFlysystemVersion() : int
+    {
+        if (method_exists(Filesystem::class, 'createDirectory')) {
+            return 3;
+        } else {
+            return 1;
+        }
+    }
 }

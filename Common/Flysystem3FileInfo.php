@@ -311,4 +311,13 @@ class Flysystem3FileInfo implements FileInfoInterface
     {
         return $this->filesystem->getType($this->getPath());
     }
+    
+    /**
+     * 
+     * @return bool
+     */
+    public function isVirtual() : bool
+    {
+        return false;
+    }
 }
