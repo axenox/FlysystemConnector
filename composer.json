@@ -1,24 +1,26 @@
 {
-    "name": "axenox/flysystemconnector",
-    "require": {
-        "exface/core": "^1.0",
-		"league/flysystem": "^3",
-		"league/flysystem-azure-blob-storage": "^3"
-    },
-    "autoload": {
-        "psr-4": {
-            "\\axenox\\FlysystemConnector\\": ""
-        },
-        "exclude-from-classmap": [
-            "/Config/",
-            "/Translations/",
-            "/Model/"
-        ]
-    },
-    "extra": {
-        "app": {
-            "app_uid": "0x11eeba8a79c2d2baba8a025041000001",
-            "app_alias": "axenox.FlysystemConnector"
-        }
-    }
+	"name" : "axenox/flysystemconnector",
+	"require" : {
+		"exface/core" : "^1.0",
+		"league/flysystem" : "^1||^3"
+	},
+	"suggest" : {
+		"league/flysystem-azure-blob-storage" : "To connect to Azure BLOB file storage"
+	},
+	"autoload" : {
+		"psr-4" : {
+			"\\axenox\\FlysystemConnector\\" : ""
+		},
+		"exclude-from-classmap" : [
+			"/Config/",
+			"/Translations/",
+			"/Model/"
+		]
+	},
+	"extra" : {
+		"app" : {
+			"app_uid" : "0x11eeba8a79c2d2baba8a025041000001",
+			"app_alias" : "axenox.FlysystemConnector"
+		}
+	}
 }
