@@ -2,9 +2,9 @@
 namespace axenox\FlysystemConnector\DataConnectors;
 
 use League\Flysystem\Filesystem;
-use axenox\FlysystemConnector\Common\AbstractFlysystemConnector;
 use exface\Core\Factories\GenericUxonFactory;
 use exface\Core\CommonLogic\UxonObject;
+use axenox\FlysystemConnector\Common\AbstractFlysystemConnector;
 
 /**
  * Generic Flysystem connection
@@ -62,7 +62,7 @@ use exface\Core\CommonLogic\UxonObject;
  *
  * @author Andrej Kabachnik
  */
-class FlysystemConnector extends AbstractFlysystemConnector
+class FlysystemFileConnector extends AbstractFlysystemConnector
 {
     private $adapterUxon = null;
     
@@ -71,7 +71,7 @@ class FlysystemConnector extends AbstractFlysystemConnector
     /**
      * 
      * {@inheritDoc}
-     * @see \axenox\FlysystemConnector\Common\AbstractFlysystemConnector::getFilesystem()
+     * @see \axenox\FlysystemFileConnector\Common\AbstractFlysystemFileConnector::getFilesystem()
      */
     protected function getFilesystem(): Filesystem
     {
@@ -98,9 +98,9 @@ class FlysystemConnector extends AbstractFlysystemConnector
      * @uxon-template {"__class": "", "__construct": [""]}
      * 
      * @param UxonObject $value
-     * @return FlysystemConnector
+     * @return FlysystemFileConnector
      */
-    protected function setAdapter(UxonObject $value) : FlysystemConnector
+    protected function setAdapter(UxonObject $value) : FlysystemFileConnector
     {
         $this->filesystem = null;
         $this->adapterUxon = $value;
