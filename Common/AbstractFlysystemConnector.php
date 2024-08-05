@@ -2,7 +2,6 @@
 namespace axenox\FlysystemConnector\Common;
 
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
-use exface\Core\Interfaces\Filesystem\FileInterface;
 use exface\Core\Interfaces\DataSources\FileDataQueryInterface;
 use exface\Core\CommonLogic\DataQueries\FileReadDataQuery;
 use exface\Core\CommonLogic\DataQueries\FileWriteDataQuery;
@@ -110,9 +109,10 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
     
     /**
      *
-     * @param Finder $filesystem
+     * @param Filesystem $filesystem
+     * @param string[] $paths
+     * @param string[] $namePatterns
      * @param string $basePath
-     * @param string $directorySeparator
      * @return \Generator
      */
     protected function createGenerator(Filesystem $filesystem, array $paths, array $namePatterns = [], string $basePath = null) : \Generator
@@ -271,9 +271,9 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
      * @uxon-type string
      *
      * @param string $value
-     * @return \exface\Core\DataConnectors\FileFinderConnector
+     * @return AbstractFlysystemConnector
      */
-    public function setBasePath($value) : AbstractFlysystemConnector
+    public function setBasePath(string $value) : AbstractFlysystemConnector
     {
         if ($value) {
             $this->base_path = FilePathDataType::normalize($value, '/');
@@ -283,6 +283,10 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         return $this;
     }
     
+    /**
+     * 
+     * @return Filesystem
+     */
     protected abstract function getFilesystem() : Filesystem;
     
     /**
