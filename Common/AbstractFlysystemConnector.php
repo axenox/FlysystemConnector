@@ -87,21 +87,23 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         
         $paths = $query->getFolders(true);
         // If no paths could be found anywhere (= the query object did not have any folders defined), use the base path
-        if (empty($paths)) {
+        if (empty($paths) && $basePath !== '') {
             $paths[] = $basePath;
         }
+
+        $explicitFiles = $query->getFilePaths(true);
+        $namePatterns = $query->getFilenamePatterns() ?? [];
+        
         // If there are no paths at this point, we don't have any existing folder to look in,
         // so add an empty result to the finder and return it. We must call in() or append()
         // to be able to iterate over the finder!
-        if (empty($paths)){
+        if (empty($paths) && empty($explicitFiles)){
             return $query->withResult([]);
         }
         
-        $namePatterns = $query->getFilenamePatterns() ?? [];
-        
         try {
             $filesystem = $this->getFilesystem();
-            return $query->withResult($this->createGenerator($filesystem, $paths, $namePatterns, $basePath));
+            return $query->withResult($this->createGenerator($filesystem, $paths, $namePatterns, $explicitFiles, $basePath));
         } catch (\Exception $e) {
             throw new DataQueryFailedError($query, "Failed to read local files", null, $e);
         }
@@ -115,10 +117,11 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
      * @param string $basePath
      * @return \Generator
      */
-    protected function createGenerator(Filesystem $filesystem, array $paths, array $namePatterns = [], string $basePath = null) : \Generator
+    protected function createGenerator(Filesystem $filesystem, array $paths, array $namePatterns = [], $explicitFiles = [], string $basePath = null) : \Generator
     {
         $filterRegExps = [];
         $filterNames = [];
+        $flysystemVer = $this->getFlysystemVersion();
         foreach ($namePatterns as $p) {
             if (RegularExpressionDataType::isRegex($p)) {
                 $filterRegExps[] = $p;
@@ -128,7 +131,7 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         }
         foreach ($paths as $path) {
             $listing = $filesystem->listContents($path);
-            if ($this->getFlysystemVersion() === 1) {
+            if ($flysystemVer === 1) {
                 // Flysystem 1
                 foreach ($listing as $arr) {
                     if (! $this->matchRegExps($arr['basename'], $filterRegExps)) {
@@ -142,8 +145,16 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
             } else {
                 // Flysystem 3
                 foreach ($listing->getIterator() as $storageAttrs) {
-                    yield new Flysystem1FileInfo($filesystem, $storageAttrs->getPath(), $basePath);
+                    yield new Flysystem3FileInfo($filesystem, $storageAttrs->getPath(), $basePath);
                 }
+            }
+        }
+        
+        foreach ($explicitFiles as $path) {
+            if ($flysystemVer === 1) {
+                yield new Flysystem1FileInfo($filesystem, $filesystem->getMetadata($path), $basePath); 
+            } else {
+                yield new Flysystem3FileInfo($filesystem, $path, $basePath);
             }
         }
     }
