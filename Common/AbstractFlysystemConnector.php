@@ -86,13 +86,13 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         $basePath = $query->getBasePath() ?? '';
         
         $paths = $query->getFolders(true);
-        // If no paths could be found anywhere (= the query object did not have any folders defined), use the base path
-        if (empty($paths) && $basePath !== '') {
-            $paths[] = $basePath;
-        }
-
         $explicitFiles = $query->getFilePaths(true);
         $namePatterns = $query->getFilenamePatterns() ?? [];
+
+        // If no paths could be found anywhere (= the query object did not have any folders defined), use the base path
+        if (empty($paths) && empty($explicitFiles) && $basePath !== '') {
+            $paths[] = $basePath;
+        }
         
         // If there are no paths at this point, we don't have any existing folder to look in,
         // so add an empty result to the finder and return it. We must call in() or append()
@@ -151,10 +151,12 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         }
         
         foreach ($explicitFiles as $path) {
-            if ($flysystemVer === 1) {
-                yield new Flysystem1FileInfo($filesystem, $filesystem->getMetadata($path), $basePath); 
-            } else {
-                yield new Flysystem3FileInfo($filesystem, $path, $basePath);
+            if ($filesystem->has($path) === true) {
+                if ($flysystemVer === 1) {
+                    yield new Flysystem1FileInfo($filesystem, $filesystem->getMetadata($path), $basePath); 
+                } else {
+                    yield new Flysystem3FileInfo($filesystem, $path, $basePath);
+                }
             }
         }
     }
