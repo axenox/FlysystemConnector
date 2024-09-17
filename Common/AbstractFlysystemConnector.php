@@ -1,6 +1,8 @@
 <?php
 namespace axenox\FlysystemConnector\Common;
 
+use axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface;
+use exface\Core\Exceptions\NotImplementedError;
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\DataSources\FileDataQueryInterface;
 use exface\Core\CommonLogic\DataQueries\FileReadDataQuery;
@@ -8,11 +10,14 @@ use exface\Core\CommonLogic\DataQueries\FileWriteDataQuery;
 use exface\Core\DataConnectors\TransparentConnector;
 use exface\Core\DataTypes\FilePathDataType;
 use exface\Core\Interfaces\DataSources\DataQueryInterface;
+use League\Flysystem\FileExistsException;
+use League\Flysystem\FileNotFoundException;
 use League\Flysystem\Filesystem;
 use exface\Core\Exceptions\DataSources\DataConnectionQueryTypeError;
 use exface\Core\DataTypes\StringDataType;
 use exface\Core\Exceptions\DataSources\DataQueryFailedError;
 use exface\Core\DataTypes\RegularExpressionDataType;
+use League\Flysystem\Util;
 
 /**
  * Reads and writes files via Flysystem
@@ -198,12 +203,13 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         }
         return false;
     }
-    
+
     /**
      *
      * @param FileWriteDataQuery $query
-     * @throws DataQueryFailedError
      * @return FileWriteDataQuery
+     * @throws FileExistsException
+     * @throws FileNotFoundException
      */
     protected function performWrite(FileWriteDataQuery $query) : FileWriteDataQuery
     {
@@ -212,23 +218,23 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         // Note: the base path of the query already includes the base path of this connection
         // - see `performQuery()`
         $basePath = $query->getBasePath();
-        
+        $filesToSave = $query->getFilesToSave();
+        $errors = $this->validateFileIntegrityArray($filesToSave);
+
+        $this->tryBeginWriting($errors);
+        // Save files.
         $resultFiles = [];
         foreach ($query->getFilesToSave(true) as $path => $content) {
             if ($path === null) {
                 throw new DataQueryFailedError($query, 'Cannot write file with an empty path!');
             }
-            
-            if ($this->getFlysystemVersion() === 1) {
-                $fs->put($path, $content ?? '');
-                $fileInfo = new Flysystem1FileInfo($fs, $fs->getMetadata($path), $basePath);
-            } else {
-                $fs->write($path, $content ?? '');
-                $fileInfo = new Flysystem3FileInfo($fs, $path, $basePath);
-            }
+
+            $fileInfo = $this->writeVersionAware($fs, $path, $basePath, $content);
             $resultFiles[] = $fileInfo;
         }
-        
+        $this->tryFinishWriting($errors);
+
+
         $deleteEmptyFolders = $query->getDeleteEmptyFolders();
         foreach ($query->getFilesToDelete(true) as $pathOrInfo) {
             if ($pathOrInfo instanceof FileInfoInterface) {
@@ -265,7 +271,41 @@ abstract class AbstractFlysystemConnector extends TransparentConnector
         
         return $query->withResult($resultFiles);
     }
-    
+
+    /**
+     * @inheritDoc
+     */
+    protected function guessMimeType(string $path, string $data): string
+    {
+        return Util::guessMimeType($path, $data);
+    }
+
+
+    /**
+     * Performs a write that is aware of the currently used version of flysystem.
+     *
+     * @param Filesystem $fs
+     * @param string $path
+     * @param string|null $basePath
+     * @param string|null $content
+     * @return FlysystemFileInfoInterface
+     * @throws FileExistsException
+     * @throws FileNotFoundException
+     */
+    private function writeVersionAware(Filesystem $fs, string $path, ?string $basePath, ?string $content) : FlysystemFileInfoInterface
+    {
+        switch ($version = $this->getFlysystemVersion()){
+            case 1:
+                $fs->put($path, $content ?? '');
+                return new Flysystem1FileInfo($fs, $fs->getMetadata($path), $basePath);
+            case 3:
+                $fs->write($path, $content ?? '');
+                return new Flysystem3FileInfo($fs, $path, $basePath);
+            default:
+                throw new NotImplementedError('FlySystem '.$version.' not supported!');
+        }
+    }
+
     /**
      *
      * @return string|NULL
