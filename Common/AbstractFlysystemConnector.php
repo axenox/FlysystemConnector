@@ -1,11 +1,13 @@
 <?php
 namespace axenox\FlysystemConnector\Common;
 
+use exface\Core\CommonLogic\AbstractDataConnector;
+use exface\Core\DataConnectors\Traits\IDoNotSupportTransactionsTrait;
+use exface\Core\DataConnectors\Traits\ICanValidateFileIntegrityTrait;
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\DataSources\FileDataQueryInterface;
 use exface\Core\CommonLogic\DataQueries\FileReadDataQuery;
 use exface\Core\CommonLogic\DataQueries\FileWriteDataQuery;
-use exface\Core\DataConnectors\TransparentConnector;
 use exface\Core\DataTypes\FilePathDataType;
 use exface\Core\Interfaces\DataSources\DataQueryInterface;
 use League\Flysystem\Filesystem;
@@ -19,8 +21,12 @@ use exface\Core\DataTypes\RegularExpressionDataType;
  *
  * @author Andrej Kabachnik
  */
-abstract class AbstractFlysystemConnector extends TransparentConnector
+abstract class AbstractFlysystemConnector extends AbstractDataConnector
 {
+    use IDoNotSupportTransactionsTrait;
+
+    use ICanValidateFileIntegrityTrait;
+
     private $base_path = null;
     
     /**
