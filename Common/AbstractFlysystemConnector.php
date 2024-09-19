@@ -32,10 +32,18 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
     /**
      *
      * {@inheritdoc}
-     *
      * @see \exface\Core\CommonLogic\AbstractDataConnector::performConnect()
      */
     protected function performConnect()
+    {
+        return;
+    }
+    /**
+     *
+     * {@inheritdoc}
+     * @see \exface\Core\CommonLogic\AbstractDataConnector::performDisconnect()
+     */
+    protected function performDisconnect()
     {
         return;
     }
