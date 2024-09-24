@@ -1,6 +1,7 @@
 <?php
 namespace axenox\FlysystemConnector\Common;
 
+use axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface;
 use exface\Core\Exceptions\NotImplementedError;
 use exface\Core\CommonLogic\AbstractDataConnector;
 use exface\Core\DataConnectors\Traits\IDoNotSupportTransactionsTrait;
@@ -232,12 +233,11 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
         // - see `performQuery()`
         $basePath = $query->getBasePath();
         $filesToSave = $query->getFilesToSave();
-        $errors = $this->validateFileIntegrityArray($filesToSave);
 
-        $this->tryBeginWriting($errors);
+        $this->validateBeforeWriting($filesToSave);
         // Save files.
         $resultFiles = [];
-        foreach ($query->getFilesToSave(true) as $path => $content) {
+        foreach ($filesToSave as $path => $content) {
             if ($path === null) {
                 throw new DataQueryFailedError($query, 'Cannot write file with an empty path!');
             }
@@ -245,7 +245,7 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
             $fileInfo = $this->writeVersionAware($fs, $path, $basePath, $content);
             $resultFiles[] = $fileInfo;
         }
-        $this->tryFinishWriting($errors);
+        $this->validateAfterWriting($resultFiles);
 
 
         $deleteEmptyFolders = $query->getDeleteEmptyFolders();
