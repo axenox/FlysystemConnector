@@ -20,7 +20,6 @@ use exface\Core\DataTypes\StringDataType;
 use exface\Core\Exceptions\DataSources\DataQueryFailedError;
 use exface\Core\DataTypes\RegularExpressionDataType;
 use League\Flysystem\Util;
-use axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface;
 
 /**
  * Reads and writes files via Flysystem
