@@ -356,4 +356,22 @@ class Flysystem1FileInfo implements FlysystemFileInfoInterface
     {
         return $this->filesystem->has($this->getPath());
     }
+    
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \exface\Core\Interfaces\Filesystem\FileInfoInterface::getMd5()
+     */
+    public function getMd5() : ?string
+    {
+        if ($this->isDir() || $this->isVirtual() || ! $this->exists()) {
+            return null;
+        }
+        $binary = $this->openFile()->read();
+        if ($binary === null) {
+            return null;
+        }
+        $hash = md5($binary);
+        return $hash === false ? null : $hash;
+    }
 }
