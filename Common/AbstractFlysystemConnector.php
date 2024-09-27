@@ -2,10 +2,10 @@
 namespace axenox\FlysystemConnector\Common;
 
 use axenox\FlysystemConnector\Interfaces\FlysystemFileInfoInterface;
+use exface\Core\DataConnectors\Traits\IValidateFileIntegrityTrait;
 use exface\Core\Exceptions\NotImplementedError;
 use exface\Core\CommonLogic\AbstractDataConnector;
 use exface\Core\DataConnectors\Traits\IDoNotSupportTransactionsTrait;
-use exface\Core\DataConnectors\Traits\ICanValidateFileIntegrityTrait;
 use exface\Core\Interfaces\Filesystem\FileInfoInterface;
 use exface\Core\Interfaces\DataSources\FileDataQueryInterface;
 use exface\Core\CommonLogic\DataQueries\FileReadDataQuery;
@@ -30,7 +30,7 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
 {
     use IDoNotSupportTransactionsTrait;
 
-    use ICanValidateFileIntegrityTrait;
+    use IValidateFileIntegrityTrait;
 
     private $base_path = null;
     
