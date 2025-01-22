@@ -20,6 +20,7 @@ use exface\Core\DataTypes\StringDataType;
 use exface\Core\Exceptions\DataSources\DataQueryFailedError;
 use exface\Core\DataTypes\RegularExpressionDataType;
 use League\Flysystem\Util;
+use League\MimeTypeDetection\FinfoMimeTypeDetector;
 
 /**
  * Reads and writes files via Flysystem
@@ -164,7 +165,7 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
             } else {
                 // Flysystem 3
                 foreach ($listing->getIterator() as $storageAttrs) {
-                    yield new Flysystem3FileInfo($filesystem, $storageAttrs->getPath(), $basePath);
+                    yield new Flysystem3FileInfo($filesystem, $storageAttrs->path(), $basePath);
                 }
             }
         }
@@ -290,7 +291,12 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
      */
     protected function guessMimeType(string $path, string $data): string
     {
-        return Util::guessMimeType($path, $data);
+        if ($this->getFlysystemVersion() === 1) {
+            return Util::guessMimeType($path);
+        } 
+        // Flysystem 2+ uses a separate package for mime type detection
+        $detector = new FinfoMimeTypeDetector();
+        return $detector->detectMimeType($path, $data);
     }
 
 
