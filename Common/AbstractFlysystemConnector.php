@@ -292,7 +292,7 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
     protected function guessMimeType(string $path, string $data): string
     {
         if ($this->getFlysystemVersion() === 1) {
-            return Util::guessMimeType($path);
+            return Util::guessMimeType($path, $data);
         } 
         // Flysystem 2+ uses a separate package for mime type detection
         $detector = new FinfoMimeTypeDetector();
