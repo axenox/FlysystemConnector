@@ -150,6 +150,12 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
             }
         }
         foreach ($paths as $path) {
+            // Double check if $path is really a folder, not a file without an extension. If it is a file,
+            // return it as a file
+            if ($flysystemVer > 1 && $filesystem->fileExists($path)) {
+                yield $this->createFileInfo($filesystem, $path, $basePath, $flysystemVer);
+                continue;
+            } 
             $listing = $filesystem->listContents($path);
             if ($flysystemVer === 1) {
                 // Flysystem 1
@@ -172,12 +178,17 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
         
         foreach ($explicitFiles as $path) {
             if ($filesystem->has($path) === true) {
-                if ($flysystemVer === 1) {
-                    yield new Flysystem1FileInfo($filesystem, $filesystem->getMetadata($path), $basePath); 
-                } else {
-                    yield new Flysystem3FileInfo($filesystem, $path, $basePath);
-                }
+                yield $this->createFileInfo($filesystem, $path, $basePath, $flysystemVer);
             }
+        }
+    }
+    
+    protected function createFileInfo(Filesystem $filesystem, string $path, string $basePath, int $flysystemVer)
+    {
+        if ($flysystemVer === 1) {
+            return new Flysystem1FileInfo($filesystem, $filesystem->getMetadata($path), $basePath);
+        } else {
+            return new Flysystem3FileInfo($filesystem, $path, $basePath);
         }
     }
     
