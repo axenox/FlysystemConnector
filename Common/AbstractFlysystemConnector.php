@@ -152,7 +152,7 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
         foreach ($paths as $path) {
             // Double check if $path is really a folder, not a file without an extension. If it is a file,
             // return it as a file
-            if ($flysystemVer > 1 && $filesystem->fileExists($path)) {
+            if ($flysystemVer > 1 && ! FilePathDataType::isPattern($path) && $filesystem->fileExists($path)) {
                 yield $this->createFileInfo($filesystem, $path, $basePath, $flysystemVer);
                 continue;
             } 
