@@ -324,16 +324,34 @@ abstract class AbstractFlysystemConnector extends AbstractDataConnector
      */
     private function writeVersionAware(Filesystem $fs, string $path, ?string $basePath, ?string $content) : FlysystemFileInfoInterface
     {
+        $fullPath = $this->getFullPath($path, $basePath);
         switch ($version = $this->getFlysystemVersion()){
             case 1:
-                $fs->put($path, $content ?? '');
-                return new Flysystem1FileInfo($fs, $fs->getMetadata($path), $basePath);
+                $fs->put($fullPath, $content ?? '');
+                return new Flysystem1FileInfo($fs, $fs->getMetadata($fullPath), $basePath);
             case 3:
-                $fs->write($path, $content ?? '');
+                $fs->write($fullPath, $content ?? '');
                 return new Flysystem3FileInfo($fs, $path, $basePath);
             default:
                 throw new NotImplementedError('FlySystem '.$version.' not supported!');
         }
+    }
+
+    /**
+     * Prepends the base path if needed
+     * 
+     * @param string $path
+     * @param string|null $basePath
+     * @return string
+     */
+    protected function getFullPath(string $path, ?string $basePath = null) : string
+    {
+        if (! FilePathDataType::isAbsolute($path) && $basePath !== null && $basePath !== '' && $basePath !== '/') {
+            $fullPath = mb_rtrim($basePath, '/') . '/' . $path;
+        } else {
+            $fullPath = $path;
+        }
+        return $fullPath;
     }
 
     /**
