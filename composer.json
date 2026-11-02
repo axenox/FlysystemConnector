@@ -7,6 +7,15 @@
 	"suggest" : {
 		"league/flysystem-azure-blob-storage" : "To connect to Azure BLOB file storage"
 	},
+	"license": [
+		"GPL-3.0+",
+		"proprietary"
+	],
+	"support": {
+		"source": "https://github.com/axenox/flysystemconnector",
+		"docs": "https://github.com/axenox/flysystemconnector/blob/1.x-dev/Docs",
+		"issues": "https://github.com/axenox/flysystemconnector/issues"
+	},
 	"autoload" : {
 		"psr-4" : {
 			"\\axenox\\FlysystemConnector\\" : ""
